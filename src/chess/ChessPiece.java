@@ -17,6 +17,10 @@ public abstract class ChessPiece extends Piece{
 		return color;
 	}
 	
+	public ChessPosition getChessPosition() {
+		return ChessPosition.fromPostion(position);
+	}
+	
 	protected boolean isThereOpponentPiece(Position position) { // Método geral que serve para todas peças. A implemação específica de cada peça está na classe da própia peça.
 		ChessPiece p = (ChessPiece)getBoard().piece(position);
 		return p != null && p.getColor() != color;
