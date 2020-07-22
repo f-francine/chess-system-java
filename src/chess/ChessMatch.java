@@ -1,6 +1,5 @@
 package chess;
 
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -112,7 +111,6 @@ public class ChessMatch {
 		//special move EN PASSANT
 		if (movedPiece instanceof Pawn && (target.getRow() == source.getRow() - 2 || target.getRow() == source.getRow() + 2))
 			enPassantVunerable = movedPiece;
-		
 		else
 			enPassantVunerable = null;
 			
@@ -121,9 +119,10 @@ public class ChessMatch {
 
 	public ChessPiece replacePromotedPiece(String type) {
 		if (promoted == null)
-			throw new IllegalStateException("There is no piece to be promoted.\nPress [ENTER] to continue.");
+			throw new IllegalStateException("There is no piece to be promoted.");
+		
 		if (!type.equals("B") && !type.equals("R") && !type.equals("N") && !type.equals("Q"))
-			throw new InvalidParameterException("Invalid piece. Please, choose a piece between \"\"B\"\", \"\"R\"\", \"\"N\"\" and \"\"Q\"\"");
+			return promoted;
 		System.out.println("Piece " + promoted.getChessPosition() + " has been promoted.");
 		System.out.println("B = Bishop\n"
 				+ "R = Rook\n"
@@ -297,7 +296,6 @@ public class ChessMatch {
 		}
 		return true;
 	}
-	
 	private void placeNewPiece(char column, int row, ChessPiece piece) {
 		board.placePiece(piece, new ChessPosition(column, row).toPosition());
 		piecesOnTheBoard.add(piece);
