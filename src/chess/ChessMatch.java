@@ -1,5 +1,6 @@
 package chess;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,7 +22,8 @@ public class ChessMatch {
 	private Board board;
 	private boolean check; // by pattern, it starts false.
 	private boolean checkMate;
-	public ChessPiece enPassantVunerable; // by pattern, it starts null.
+	private ChessPiece enPassantVunerable; // by pattern, it starts null.
+	private ChessPiece promoted;
 	
 	private List<ChessPiece> piecesOnTheBoard = new ArrayList<>();
 	private List<ChessPiece> capturedPieces = new ArrayList<>();
@@ -51,6 +53,10 @@ public class ChessMatch {
 	
 	public ChessPiece getEnPassantVunerable() {
 		return enPassantVunerable;
+	}
+	
+	public ChessPiece getPromoted() {
+		return promoted;
 	}
 
 	public ChessPiece[][] getPieces() {
@@ -84,6 +90,17 @@ public class ChessMatch {
 		
 		ChessPiece movedPiece = (ChessPiece)board.piece(target);
 		
+		//special move PROMOTION
+		promoted = null;
+		
+		if (movedPiece instanceof Pawn) {
+			if (movedPiece.getColor() == Color.WHITE && target.getRow() == 0 || movedPiece.getColor() == Color.BLACK && target.getRow() == 7 ) {
+				promoted = (ChessPiece)board.piece(target);
+				promoted = replacePromotedPiece("Q");
+				
+			}
+		}
+		
 		check = (testCheck(opponent(currentPlayer))) ? true : false;
 		
 		if (testCheckMate(opponent(currentPlayer)))
@@ -92,7 +109,7 @@ public class ChessMatch {
 		else
 			nextTurn();
 		
-		// special move EN PASSANT
+		//special move EN PASSANT
 		if (movedPiece instanceof Pawn && (target.getRow() == source.getRow() - 2 || target.getRow() == source.getRow() + 2))
 			enPassantVunerable = movedPiece;
 		
@@ -102,6 +119,32 @@ public class ChessMatch {
 		return (ChessPiece) capturedPiece;
 	}
 
+	public ChessPiece replacePromotedPiece(String type) {
+		if (promoted == null)
+			throw new IllegalStateException("There is no piece to be promoted.\nPress [ENTER] to continue.");
+		if (!type.equals("B") && !type.equals("R") && !type.equals("N") && !type.equals("Q"))
+			throw new InvalidParameterException("Invalid piece. Please, choose a piece between \"\"B\"\", \"\"R\"\", \"\"N\"\" and \"\"Q\"\"");
+		System.out.println("Piece " + promoted.getChessPosition() + " has been promoted.");
+		System.out.println("B = Bishop\n"
+				+ "R = Rook\n"
+				+ "N = Knight\n"
+				+ "Q = Queen");
+		Position pos = promoted.getChessPosition().toPosition();
+		Piece p = board.removePiece(pos);
+		piecesOnTheBoard.remove(p);
+		
+		ChessPiece newPiece = newPiece(type, promoted.getColor());
+		board.placePiece(newPiece, pos);
+		piecesOnTheBoard.add(newPiece);
+		
+		return newPiece;
+	}
+	private ChessPiece newPiece(String type, Color color) {
+		if (type.equals("B")) return new Bishop(board, color); //is used "equals()" because String is not a primitive type. It is a Class type, so we can't compare using "==".
+		if (type.equals("R")) return new Rook(board, color);
+		if (type.equals("N")) return new Knight(board, color);
+		return new Queen(board, color);
+	}
 	private Piece makeMove(Position source, Position target) {
 		ChessPiece p = (ChessPiece)board.removePiece(source);
 		p.increaseCount();
@@ -112,7 +155,6 @@ public class ChessMatch {
 			piecesOnTheBoard.remove(capturedPiece);
 			capturedPieces.add((ChessPiece) capturedPiece);
 		}
-		
 		//special move CASTLING king side rook
 		if (p instanceof King && target.getColumn() == source.getColumn() + 2) {
 			Position sourceR = new Position(source.getRow(), source.getColumn() + 3);
@@ -121,7 +163,6 @@ public class ChessMatch {
 			board.placePiece(rook, targetR);
 			rook.increaseCount();
 		}
-		
 		//special move CASTLING queen side rook
 		if (p instanceof King && target.getColumn() == source.getColumn() - 2) {
 			Position sourceR = new Position(source.getRow(), source.getColumn() - 4);
@@ -130,7 +171,6 @@ public class ChessMatch {
 			board.placePiece(rook, targetR);
 			rook.increaseCount();
 		}
-		
 		//special move EN PASSANT
 		if (p instanceof Pawn) {
 			if(source.getColumn() != target.getColumn() && capturedPiece == null) {
@@ -148,7 +188,6 @@ public class ChessMatch {
 		}
 		return capturedPiece;
 	}
-	
 	private void undoMove(Position source, Position target, Piece capturedPiece) {
 		ChessPiece p = (ChessPiece)board.removePiece(target);
 		p.decreaseCount();
@@ -177,7 +216,6 @@ public class ChessMatch {
 			board.placePiece(rook, sourceR);
 			rook.decreaseCount();
 		}
-		
 		//special move EN PASSANT
 		if (p instanceof Pawn) {
 			if(source.getColumn() != target.getColumn() && capturedPiece == enPassantVunerable) {
@@ -187,15 +225,12 @@ public class ChessMatch {
 				else
 					pawnPosition = new Position(4, target.getColumn());
 			board.placePiece(p, pawnPosition);
-				
-				capturedPiece = board.removePiece(pawnPosition);
-				capturedPieces.add((ChessPiece) capturedPiece);
-				piecesOnTheBoard.remove(capturedPiece);
+			capturedPiece = board.removePiece(pawnPosition);
+			capturedPieces.add((ChessPiece) capturedPiece);
+			piecesOnTheBoard.remove(capturedPiece);
 			}
-			
 		}
 	}
-
 	private void validateSourcePosition(Position position) {
 		if (!board.thereIsAPiece(position))
 			throw new ChessException("\nThere is no piece on source position.\nPress [ENTER] to continue.");
